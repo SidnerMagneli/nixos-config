@@ -71,7 +71,7 @@ let name = "Sidner Magnéli";
 
       # Always color ls and group directories
       alias ls='ls --color=auto'
-      alias upgrade="cd ~/nix && nix run '.#build-switch'"
+      alias upgrade="cd ~/nix/nixos-config && nix run '.#build-switch'"
     '';
   };
 
