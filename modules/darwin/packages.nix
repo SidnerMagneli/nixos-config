@@ -4,6 +4,7 @@ with pkgs;
 let shared-packages = import ../shared/packages.nix { inherit pkgs; }; in
 shared-packages ++ [
   nix-search-cli
+  k9s
   dockutil
   vscode
   uv
