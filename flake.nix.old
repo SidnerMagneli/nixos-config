@@ -1,0 +1,125 @@
+{
+  description = "Ziggy Stardust nix-darwin system flake";
+
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+    nix-darwin.url = "github:LnL7/nix-darwin/master";
+    nix-homebrew.url = "github:zhaofengli/nix-homebrew";  # Add nix-homebrew package
+    nix-darwin.inputs.nixpkgs.follows = "nixpkgs";
+    nix-homebrew.inputs.nixpkgs.follows = "nixpkgs";  # Ensure consistency in nixpkgs version
+
+    # Optional: Declarative Homebrew tap management
+    homebrew-core = {
+      url = "github:homebrew/homebrew-core";
+      flake = false;
+    };
+    homebrew-cask = {
+      url = "github:homebrew/homebrew-cask";
+      flake = false;
+    };
+    homebrew-bundle = {
+      url = "github:homebrew/homebrew-bundle";
+      flake = false;
+    };
+
+    mac-app-util.url = "github:hraban/mac-app-util";
+  };
+
+  outputs = inputs@{ self, nix-darwin, nixpkgs, nix-homebrew, homebrew-core, homebrew-cask, homebrew-bundle, mac-app-util, ... }:
+  let
+    configuration = { pkgs, config, ... }: {
+
+      # Prevents nix-darwin from managing the Nix installation, avoiding conflicts with Determinate.
+      nix.enable = false;
+
+      # Allow installation of non-free software (e.g., VSCode)
+      nixpkgs.config.allowUnfree = true;
+
+      # Define system-wide packages
+      environment.systemPackages = [ 
+          pkgs.vim 
+	        pkgs.vscode
+          pkgs.uv
+          pkgs.mkalias
+      ];
+
+      # Setup script for GUI application.
+      # system.activationScripts.applications.text = let
+      #   env = pkgs.buildEnv {
+      #     name = "system-applications";
+      #     paths = config.environment.systemPackages;
+      #     pathsToLink = "/Applications";
+      #   };
+      # in
+      #   pkgs.lib.mkForce ''
+      #   # Set up applications.
+      #   echo "setting up /Applications..." >&2
+      #   rm -rf /Applications/Nix\ Apps
+      #   mkdir -p /Applications/Nix\ Apps
+      #   find ${env}/Applications -maxdepth 1 -type l -exec readlink '{}' + |
+      #   while read -r src; do
+      #     app_name=$(basename "$src")
+      #     echo "copying $src" >&2
+      #     ${pkgs.mkalias}/bin/mkalias "$src" "/Applications/Nix Apps/$app_name"
+      #   done
+      #       '';
+
+      # Ensure Homebrew is enabled
+      homebrew = {
+        enable = true;
+        brews = [ "cowsay" ];  # Example installed package
+        casks = [];
+
+        onActivation.cleanup = "zap";
+        onActivation.autoUpdate = true;
+        onActivation.upgrade = true;
+      };
+
+      # Enable Flakes & nix-command
+      nix.settings.experimental-features = "nix-command flakes";
+
+      # Enable Zsh
+      programs.zsh.enable = true;
+
+      # Allow Touch ID for sudo authentication
+      security.pam.services.sudo_local.touchIdAuth = true;
+
+      # Track system configuration in Git
+      system.configurationRevision = self.rev or self.dirtyRev or null;
+
+      # Define Darwin system version
+      system.stateVersion = 6;
+
+      # Set host architecture (Apple Silicon)
+      nixpkgs.hostPlatform = "aarch64-darwin";
+    };
+  in
+  {
+    # Build configuration with:
+    # $ darwin-rebuild switch --flake .#Ziggys-MacBook-Pro
+    darwinConfigurations."Ziggys-MacBook-Pro" = nix-darwin.lib.darwinSystem {
+      modules = [ 
+        configuration
+        mac-app-util.darwinModules.default # should solve the issue of GUI apps not showing in spotlight etc.
+        nix-homebrew.darwinModules.nix-homebrew # Import nix-homebrew module to allow system-wide Homebrew management
+        {
+          # Enable and configure nix-homebrew
+          nix-homebrew = {
+            enable = true;  # Install Homebrew under /opt/homebrew
+            enableRosetta = true;  # Install an x86_64 version for Rosetta (Apple Silicon only)
+            user = "ziggystardust";  # Set Homebrew owner
+            mutableTaps = false;  # Prevent manual tap modifications
+
+            # Optional: Add taps from Homebrew repositories
+            taps = {
+              "homebrew/homebrew-core" = homebrew-core;
+              "homebrew/homebrew-cask" = homebrew-cask;
+              "homebrew/homebrew-bundle" = homebrew-bundle;
+            };
+          };
+        }
+      ];
+    };
+  };
+}
+

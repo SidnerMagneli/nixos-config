@@ -1,19 +1,32 @@
 { config, pkgs, lib, ... }:
 
-let name = "Dustin Lyons";
-    user = "dustin";
-    email = "dustin@dlyons.dev"; in
+let name = "Sidner Magnéli";
+    user = "ziggystardust";
+    email = "sidner.magneli@eghed.se"; in
 {
-
-  direnv = {
-      enable = true;
-      enableZshIntegration = true;
-      nix-direnv.enable = true;
-    };
-
+  # Shared shell configuration
   zsh = {
     enable = true;
-    autocd = false;
+
+    prezto.enable = true;
+    prezto.extraConfig = ''
+    # For example, set the default theme to 'sorin'
+    zstyle ':prezto:module:prompt' theme 'sorin'
+    # Add any additional custom configuration here.
+    '';
+
+    prezto.pmodules = [
+      "environment"
+      "terminal"
+      "history"
+      "syntax-highlighting"
+      "completion"
+      "helper"
+      "git"
+      "fasd"
+    ];
+
+    autocd = true;
     cdpath = [ "~/.local/share/src" ];
     plugins = [
       {
@@ -33,44 +46,32 @@ let name = "Dustin Lyons";
         . /nix/var/nix/profiles/default/etc/profile.d/nix.sh
       fi
 
-      if [[ "$(uname)" == "Linux" ]]; then
-        alias pbcopy='xclip -selection clipboard'
-      fi
-
       # Define variables for directories
-      export PATH=$HOME/.pnpm-packages/bin:$HOME/.pnpm-packages:$PATH
-      export PATH=$HOME/.npm-packages/bin:$HOME/bin:$PATH
-      export PATH=$HOME/.composer/vendor/bin:$PATH
       export PATH=$HOME/.local/share/bin:$PATH
+      export PATH=$HOME/.composer/vendor/bin:$PATH
 
       # Remove history data we don't want to see
       export HISTIGNORE="pwd:ls:cd"
 
       # Ripgrep alias
-      alias search='rg -p --glob "!node_modules/*" --glob "!vendor/*" "$@"'
+      alias search=rg -p --glob $@
 
-      # Emacs is my editor
-      export ALTERNATE_EDITOR=""
-      export EDITOR="emacsclient -t"
-      export VISUAL="emacsclient -c -a emacs"
-      e() {
-          emacsclient -t "$@"
+      # Set editor
+      export EDITOR="code -w"
+      export VISUAL="code -w"
+      # export ALTERNATE_EDITOR=""
+
+      # nix shortcuts
+      shell() {
+          nix-shell '<nixpkgs>' -A "$1"
       }
-
-      # Laravel Artisan
-      alias art='php artisan'
-
-      # PHP Deployer
-      alias deploy='dep deploy'
 
       # Use difftastic, syntax-aware diffing
       alias diff=difft
 
       # Always color ls and group directories
       alias ls='ls --color=auto'
-
-      # Reboot into my dual boot Windows partition
-      alias windows='systemctl reboot --boot-loader-entry=auto-windows'
+      alias upgrade="cd ~/nix && nix run '.#build-switch'"
     '';
   };
 
@@ -96,7 +97,7 @@ let name = "Dustin Lyons";
 
   vim = {
     enable = true;
-    plugins = with pkgs.vimPlugins; [ vim-airline vim-airline-themes copilot-vim vim-startify vim-tmux-navigator ];
+    plugins = with pkgs.vimPlugins; [ vim-airline vim-airline-themes vim-startify vim-tmux-navigator ];
     settings = { ignorecase = true; };
     extraConfig = ''
       "" General
@@ -230,6 +231,14 @@ let name = "Dustin Lyons";
         ];
       };
 
+      dynamic_padding = true;
+      decorations = "full";
+      title = "Terminal";
+      class = {
+        instance = "Alacritty";
+        general = "Alacritty";
+      };
+
       colors = {
         primary = {
           background = "0x1f2528";
@@ -305,7 +314,7 @@ let name = "Dustin Lyons";
         # Use XDG data directory
         # https://github.com/tmux-plugins/tmux-resurrect/issues/348
         extraConfig = ''
-          set -g @resurrect-dir '/Users/dustin/.cache/tmux/resurrect'
+          set -g @resurrect-dir '$HOME/.cache/tmux/resurrect'
           set -g @resurrect-capture-pane-contents 'on'
           set -g @resurrect-pane-contents-area 'visible'
         '';
@@ -323,9 +332,6 @@ let name = "Dustin Lyons";
     escapeTime = 10;
     historyLimit = 50000;
     extraConfig = ''
-      # Default shell
-      set-option -g default-shell /run/current-system/sw/bin/zsh
-
       # Remove Vim mode delays
       set -g focus-events on
 
