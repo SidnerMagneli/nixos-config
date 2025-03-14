@@ -87,7 +87,7 @@ in
         { path = "/Applications/Microsoft Outlook.app/"; }
         { path = "/Applications/Slack.app/"; }
         { path = "/Applications/Notion.app/"; }
-        { path = "/Applications/Nix Apps/Visual Studio Code.app/"; }
+        { path = "/Applications/Visual Studio Code.app/"; }
         {
           path = "${config.users.users.${user}.home}/downloads";
           section = "others";
