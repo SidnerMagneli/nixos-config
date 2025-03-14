@@ -2,8 +2,6 @@
 
 with pkgs; [
 
-  # zsh-prezto
-
   # General packages for development and system management
   aspell
   aspellDicts.en
