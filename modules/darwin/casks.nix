@@ -5,9 +5,10 @@ _:
   # "homebrew/cask/docker"
   "visual-studio-code"
 
-  # Communication Tools
+  # Productivity Tools
   "discord"
   "slack"
+  "clickup"
   # "telegram"
   # "zoom"
 
